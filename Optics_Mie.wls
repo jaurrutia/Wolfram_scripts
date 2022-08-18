@@ -135,6 +135,36 @@ MieScatteringAmplitude12[x_, m_, angle_, pole_] :=
         s2 = Plus @@ (coeff * Plus @@ (ab*Reverse[pitau]) );
   {s1, s2}]
 (* --------------------------------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------------------------------- *)
+MieScatteringAmplitude012[x_, m_, angle_] :=
+    Module[{ab, poles, pitau, coeff,  s0, s1, s2},
+        poles = Range[Ceiling[x + 4.*x^(1./3) + 2.]]; (*Wacombe criteria for convergence*)
+
+        ab = MieCoefficient[poles, x, m];
+        pitau = Through[{MiePi, MieTau}[poles, Cos[angle]] ];
+        coeff = ((2.*# + 1)/((# + 1)*#)) & /@ poles;
+		
+		s0 = 0.5 * Plus @@ (((2.*#+1) &/@ poles) * Plus @@ ab);
+        s1 = Plus @@ (coeff * Plus @@ (ab*pitau) );
+        s2 = Plus @@ (coeff * Plus @@ (ab*Reverse[pitau]) );
+  {s0, s1, s2}]
+(* --------------------------------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------------------------------- *)
+MieScatteringAmplitude012[x_, m_, angle_, pole_] :=
+    Module[{ab, poles, pitau, coeff,  s0, s1, s2},
+		If[! Apply[Equal, IntegerQ /@ toMap[pole]],
+            Return[Message[MieCoefficient::Int, #]] & /@ toMap[pole]]; (*Pole orders must be integers*)    
+        If[Length[pole] == 0, poles = Range[pole], poles = pole];
+
+        ab = MieCoefficient[poles, x, m];
+        pitau = Through[{MiePi, MieTau}[poles, Cos[angle]] ];
+        coeff = ((2.*# + 1)/((# + 1)*#)) & /@ poles;
+
+		s0 = 0.5 * Plus @@ (((2.*#+1) &/@ poles) * Plus @@ ab);
+        s1 = Plus @@ (coeff * Plus @@ (ab*pitau) );
+        s2 = Plus @@ (coeff * Plus @@ (ab*Reverse[pitau]) );
+  {s0, s1, s2}]
+(* --------------------------------------------------------------------------------------------- *)
 
 
 
@@ -198,6 +228,7 @@ MieExtinctionQ[indices_, wlength_, radius_] :=
         ab = Plus @@ ( Re @ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
         sum = Plus @@ ((2.*# + 1 & /@ poles)*ab);       (*Muliply the past value by a pole-order dependent coefficient*)
     sum *= 2./(x^2)]       (*Normalize by the geometric cross section of the sphere*)
+
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
 MieExtinctionQ[indices_, wlength_, radius_, pole_] :=
@@ -234,7 +265,7 @@ MieAbsorptionQ[indices_, wlength_, radius_] :=
         poles = Range[Ceiling[x + 4.*x^(1./3) + 2.]];(*Wacombe criteria for convergence*)
 
         (*From right to left -> Calculate Mie Coefficients, ge the real part, and the perform the sum*)
-        ab = Plus @@ ( (Re[#] - Chop[# * Conjugate[#]])@ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
+        ab = Plus @@ ( (Re[#] - Chop[# * Conjugate[#]])& @ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
         sum = Plus @@ ((2.*# + 1 & /@ poles)*ab);       (*Muliply the past value by a pole-order dependent coefficient*)
     sum *= 2./(x^2)]       (*Normalize by the geometric cross section of the sphere*)
 (* --------------------------------------------------------------------------------------------- *)
@@ -250,7 +281,7 @@ MieAbsorptionQ[indices_, wlength_, radius_, pole_] :=
         If[Length[pole] == 0, poles = Range[pole], poles = pole];
 
         (*From right to left -> Calculate Mie Coefficients, ge the real part, and the perform the sum*)
-        ab = Plus @@ ( (Re[#] - Chop[#*Conjugate[#]]) @ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
+        ab = Plus @@ ( (Re[#] - Chop[#*Conjugate[#]])& @ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
         sum = Plus @@ ((2.*# + 1 & /@ poles)*ab);       (*Muliply the past value by a pole-order dependent coefficient*)
     sum *= 2./(x^2)]       (*Normalize by the geometric cross section of the sphere*)
 (* --------------------------------------------------------------------------------------------- *)
