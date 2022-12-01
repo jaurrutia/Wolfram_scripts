@@ -7,7 +7,7 @@ Coherent Scattering Model Package  (Under developement)
 This package requires the CSM
 Standard Mie Theory related functions as described by Bohren & Hufmann.
 
-Las Modification: 2022 / 06 / 30
+Las Modification: 2022 / 09 / 12
 ------------------------------------------------------------------------------------------------*)
 toMap::usage = "Changes a non-list entry to a list so Map can be used.";
 toMap = If[Length[#] == 0, {#}, #] & ;
@@ -166,7 +166,7 @@ CSM3MediaReflectionExt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:=
 	r13= Through[{fresnelRs, fresnelRp}[thetai, toMap/@{nM,nS}]]; (*[[pol, ang, lda]]*)
 	beta = (2.*Pi/wlength)*(rad)*toMap[nM] * # &/@ Cos[thetai];  (*[[ang, lda]]*)
 
-	func = #1[[1]] +( #2*#1[[2]]*#1[[2]]*#1[[2]]*Exp[2*I*beta])/(1.- #2 * #1[[1]] *Exp[2*I*beta])&;
+	func = #1[[1]] +( #2*#1[[2]]*#1[[2]]*Exp[2*I*beta])/(1.- #2 * #1[[1]] *Exp[2*I*beta])&;
 	rr = MapThread[func ][ {rtCoh, r13}] ;(*[[pol (2), ang, lda]]*)
 
 	Which[Length[nM]==Length[ang]==0, rr[[;;,1,1]],
@@ -256,15 +256,23 @@ CSM3MediaElipsometryInt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:= {ArcTan[Abs[#]],A
 
 (* --------------------------------------------------------------------------------------------- *)
 (*CSMPolyAmplitudeReflectionTransmission = {{rs,ts},{rp,tp}}*)
-Options[CSMPolyAmplitudeReflectionTransmission] = {"IntegrationParameters"-> Automatic};
-CSMPolyAmplitudeReflectionTransmission::int = "The values of `1 must be Automatic or a list of the form {limInf,limSup, step}."
-CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma_, sizeDist_}, OptionsPattern[]]:=
-	Module[{km, kmz, eta, x, alpha, m, theta = toMap[N[ang]],S012,rhoS012, func,aa, lim, h, phase, int,betaF,betaC, betaB,radii},
+Options[CSMPolyAmplitudeReflectionTransmission] = {"SizeDistribution"-> "LogNormal"};
+CSMPolyAmplitudeReflectionTransmission::Dist = "The values of `1 must be either 'LogNormal' or 'Normal'."
+CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:=
+	Module[{km, kmz, eta, x, alpha, m, theta = toMap[N[ang]],S012,rhoS012, func,aa, lim, h, phase, int,betaF,betaC, betaB,radii,rhost,sizeDist},
 		If[Length[cfrac]!=0,Return[Message[CSM::cfrac,cfrac]]];
 		If[!Apply[Equal, Length /@ {lda, nM,nP}], Return[Message[CSM::length,nP,nM,lda]]];
 	
-		lim = mu * Power[sigma, {-1,+1}*Sqrt[18.]]; 
-		h = Abs[Differences[lim] / 40][[1]];
+		Switch[OptionValue["SizeDistribution"],
+				"LogNormal", lim = mu * Power[sigma, {-1,+1}*Sqrt[18.]];
+							 h = Abs[Differences[lim] / 40][[1]];
+							 rhost =  cfrac * Exp[-2*Log[sigma]^2]/(Pi * mu^2);
+							 sizeDist = rhost * PDF[LogNormalDistribution[Log[mu],Log[sigma]],#]&,
+				"Normal", lim = mu + 5*sigma*{-1,+1}; lim[[1]] = If[lim[[1]]< 0,0,lim[[1]]];
+							 h = Abs[Differences[lim] / 40][[1]];
+							 rhost =  cfrac /(Pi * mu^2);
+							 sizeDist = rhost * PDF[NormalDistribution[mu,sigma],#]&,
+						_, Return[Message[CSMPolyAmplitudeReflectionTransmission::Dist,"SizeDistribution"]]];
 		radii = Table[a,{a,lim[[1]], lim[[-1]], h}];
 		
 		km = toMap[(2.*Pi /lda)*nM]; (*[[lda]]*)
@@ -275,15 +283,18 @@ CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma
 		
 		rhoS012 = Table[x = toMap[2.Pi*nM*a/lda];
 				S012 = Array[MieS012[x[[#1]],m[[#1]],Pi-2*theta[[#2]]]&, Length/@{m,theta}]; (*[[lda,ang, 3]]*)
-				sizeDist[a, mu, sigma]*Transpose[S012,{3,2,1}] (*[[3, ang, lda]]*) ,
+				sizeDist[a]*Transpose[S012,{3,2,1}] (*[[3, ang, lda]]*) ,
 					{a,radii}]; (*[[a, 3, ang, lda ]]*)
 		
 		rhoS012 = Transpose[rhoS012]; (*[[3 = {S0,S1,S2}, a, ang, lda ]]*)
-		phase = Table[Exp[#*2*I*a], {a,radii}]&/@{Re[kmz]+I*Abs[Im[kmz]],-Re[kmz]+I*Abs[Im[kmz]]};(*[[ 2 = {+,-}, a, ang, lda ]]*) (*MODIFICACI\[CapitalOAcute]N EN LA FASE. 25/08/22*)
+		phase = Table[Exp[#*2*I*a], {a,radii}]&/@{kmz,-Re[kmz]+Abs[Im[kmz]]*I};(*[[ 2 = {+,-}, a, ang, lda ]]*) (*MODIFICACI\[CapitalOAcute]N EN LA FASE. 25/08/22*)
 		(*phase = Transpose[phase]; (*[[2 = {+,-}, a, ang, lda ]]*)*)
 		
-		int = NIntegrate[Interpolation[Transpose[{radii,#1}]][a],{a,lim[[1]]*sigma,lim[[-1]]/sigma}]&;
-		betaF = Table[eta * Array[int[rhoS012[[1,;;,#1,#2]]]&, Length /@ { theta, m}], {i,2,3}]; (*[[pol, ang, lda]]*)
+		int = Switch[OptionValue["SizeDistribution"],
+				"LogNormal", NIntegrate[Interpolation[Transpose[{radii,#1}]][a],{a,lim[[1]]*sigma,lim[[-1]]/sigma}]&,
+				"Normal", NIntegrate[Interpolation[Transpose[{radii,#1}]][a],{a,lim[[1]]+sigma/2,lim[[-1]]-sigma/2}]&];
+		
+		betaF = {#,#}&@(eta * Array[int[rhoS012[[1,;;,#1,#2]]]&, Length /@ { theta, m}]); (*[[pol, ang, lda]]*)
 		betaB = Table[eta * Array[int[rhoS012[[i,;;,#1,#2]]*phase[[1,;;,#1,#2]]]&, Length /@ {theta, m}], {i,2,3}]; (*[[pol, ang, lda]]*) 
 		betaC = Table[eta * Array[int[rhoS012[[i,;;,#1,#2]]*phase[[2,;;,#1,#2]]]&, Length /@ {theta, m}], {i,2,3}]; (*[[pol, ang, lda]]*) 
 		(*Return[{betaF,betaB,betaC}];*)
@@ -299,12 +310,13 @@ CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma
 
 
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyReflectionExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
+Options[CSMPolyReflectionExt] = {"SizeDistribution"-> "LogNormal"};
+CSMPolyReflectionExt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:=
 	Module[{thetai = toMap[ang],thetat, wlength = toMap[lda], rtCoh, r13, beta, func,rr},
 		If[Length[cfrac]!=0,Return[Message[CSM::cfrac,cfrac]]];
 		If[!Apply[Equal, Length /@ {lda, nM,nP}], Return[Message[CSM::length,nP,nM,lda]]];
 	
-	rtCoh= CSMPolyAmplitudeReflectionTransmission[thetai,toMap/@{nM,nP}, lda, cfrac,{mu, sigma, sizeDist}]; (*[[pol, rt, ang, lda]]*)
+	rtCoh= CSMPolyAmplitudeReflectionTransmission[thetai,toMap/@{nM,nP}, lda, cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]]; (*[[pol, rt, ang, lda]]*)
 	r13= Through[{fresnelRs, fresnelRp}[thetai, toMap/@{nM,nS}]]; (*[[pol, ang, lda]]*)
 	
 	func = #1[[1]] +( #2*#1[[2]]*#1[[2]]*#1[[2]])/(1.- #2 * #1[[1]])   & ;
@@ -316,14 +328,15 @@ CSMPolyReflectionExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
 		True, rr]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyReflectionInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
+Options[CSMPolyReflectionInt] = {"SizeDistribution"-> "LogNormal"};
+CSMPolyReflectionInt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:=
 	Module[{thetai = toMap[ang],thetat, wlength = toMap[lda], rCoh, r31, beta, func,rr},
 		If[Length[cfrac]!=0,Return[Message[CSM::cfrac,cfrac]]];
 		If[!Apply[Equal, Length /@ {lda, nM,nP}], Return[Message[CSM::length,nP,nM,lda]]];
 		
 		thetat = ArcSin[ #* toMap[ nS/nM] ] &/@ Sin[thetai] ; (* [[ang, lda]] *)
 (*CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma_, sizeDist_}]*)
-		rCoh = Array[ CSMPolyAmplitudeReflectionTransmission[ thetat[[#1,#2]], Map[toMap,{nM,nP}][[;;, #2]], lda[[#2]],cfrac,{mu, sigma, sizeDist}]& , Dimensions[thetat]] ; (*[[ang, lda, pol, rt]]*)
+		rCoh = Array[ CSMPolyAmplitudeReflectionTransmission[ thetat[[#1,#2]], Map[toMap,{nM,nP}][[;;, #2]], lda[[#2]],cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]]& , Dimensions[thetat]] ; (*[[ang, lda, pol, rt]]*)
 		rCoh = Transpose[rCoh, {3,4,2,1}]; (*[[ rt, pol,  ang, lda]]*)
 		rCoh = rCoh[[1]] ; (*[[pol, ang, lda]]  -  Only reflection*)
 		r31= Through[{fresnelRs, fresnelRp}[thetai, toMap/@{nS,nM}]]; (*[[pol, ang, lda]]*)
@@ -341,12 +354,13 @@ CSMPolyReflectionInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
 
 
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyTransmissionExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
+Options[CSMPolyTransmissionExt] = {"SizeDistribution"-> "LogNormal"};
+CSMPolyTransmissionExt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:=
 	Module[{thetai = toMap[ang],thetat, wlength = toMap[lda], rtCoh, rt13, beta, func,tt},
 		If[Length[cfrac]!=0,Return[Message[CSM::cfrac,cfrac]]];
 		If[!Apply[Equal, Length /@ {lda, nM,nP}], Return[Message[CSM::length,nP,nM,lda]]];
 	
-		rtCoh= CSMPolyAmplitudeReflectionTransmission[thetai,toMap/@{nM,nP}, lda, cfrac,{mu, sigma, sizeDist}]; (*[[pol, rt, ang, lda]]*)
+		rtCoh= CSMPolyAmplitudeReflectionTransmission[thetai,toMap/@{nM,nP}, lda, cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]]; (*[[pol, rt, ang, lda]]*)
 		rt13= Through[{fresnelRs,fresnelTs, fresnelRp,fresnelTp}[thetai, toMap/@{nM,nS}]]; (*[[4, ang, lda*)
 		rt13= Partition[rt13,2];(*[[pol, rt, ang, lda*)
 		
@@ -359,14 +373,15 @@ CSMPolyTransmissionExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:
 		True, tt]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyTransmissionInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:=
+Options[CSMPolyTransmissionInt] = {"SizeDistribution"-> "LogNormal"};
+CSMPolyTransmissionInt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:=
 	Module[{thetai = toMap[ang],thetat, wlength = toMap[lda], rtCoh, r13t31, beta, func,tt},
 		If[Length[cfrac]!=0,Return[Message[CSM::cfrac,cfrac]]];
 		If[!Apply[Equal, Length /@ {lda, nM,nP}], Return[Message[CSM::length,nP,nM,lda]]];
 		
 		thetat = ArcSin[ #* toMap[ nS/nM] ] &/@ Sin[thetai] ; (* [[ang, lda]] *)
 		(*CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma_, sizeDist_}]*)
-		rtCoh = Array[ CSMPolyAmplitudeReflectionTransmission[ thetat[[#1,#2]], Map[toMap,{nM,nP}][[;;, #2]], lda[[#2]],cfrac,{mu, sigma, sizeDist}]& , Dimensions[thetat]] ; (*[[ang, lda, pol, rt]]*)
+		rtCoh = Array[ CSMPolyAmplitudeReflectionTransmission[ thetat[[#1,#2]], Map[toMap,{nM,nP}][[;;, #2]], lda[[#2]],cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]]& , Dimensions[thetat]] ; (*[[ang, lda, pol, rt]]*)
 		rtCoh = Transpose[rtCoh, {3,4,1,2}]; (*[[  pol, rt,  ang, lda]]*)
 		
 		r13t31 = Table[Array[rfresnel[thetat[[#1,#2]], {toMap[nM][[#2]],toMap[nS][[#2]]}]&,Dimensions[thetat]],{rfresnel,{fresnelRs, fresnelRp}}]; (*[[pol, ang, lda]]*)
@@ -386,7 +401,11 @@ CSMPolyTransmissionInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:
 
 
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyElipsometryExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionExt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
-CSMPolyElipsometryInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionInt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
+Options[CSMPolyElipsometryExt] = {"SizeDistribution"-> "LogNormal"};
+Options[CSMPolyElipsometryInt] = {"SizeDistribution"-> "LogNormal"};
+
+CSMPolyElipsometryExt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionExt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]](*[[pol (2), ang, lda]]*))
+
+CSMPolyElipsometryInt[ang_,{nM_,nP_,nS_},lda_, cfrac_, {mu_, sigma_}, OptionsPattern[]]:={ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionInt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma},"SizeDistribution" -> OptionValue["SizeDistribution"]](*[[pol (2), ang, lda]]*))
 (* --------------------------------------------------------------------------------------------- *)
 
