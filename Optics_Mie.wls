@@ -61,8 +61,8 @@ MieCoefficientInt[n_, x_, m_] :=
         {psiX, dpsiX} = {x*#, -n*# + x*SphericalBesselJ[n - 1, x]} &@ SphericalBesselJ[n, x];
         {xiX, dxiX} = {psiX, dpsiX} + I*{x*#, -n*# + x*SphericalBesselY[n - 1, x]} &@ SphericalBesselY[n, x];
 
-        cn = (m*dxiX*psiX - m * xiX*dpsiX)/(psiMX*dxiX - m*xiX*dpsiMX);
-        dn = (m*dpsiMX*dpsiX - m * dxiX * dpsiX )/(m*psiMX*dxiX - xiX*dpsiMX);
+        cn = (-m*dxiX*psiX + m * xiX * dpsiX)/( m*xiX*dpsiMX - psiMX*dxiX);
+        dn = (m*dxiX*psiX - m * xiX * dpsiX )/(m*psiMX*dxiX - xiX*dpsiMX);
   {cn, dn}]
 (* --------------------------------------------------------------------------------------------- *)
 
@@ -243,7 +243,7 @@ MieExtinctionQ[indices_, wlength_, radius_, pole_] :=
 
         (*From right to left -> Calculate Mie Coefficients, ge the real part, and the perform the sum*)
         ab = Plus @@ ( Re @ MieCoefficient[poles, x, Divide @@ Reverse[indices]]);
-        sum = Plus @@ ((2.*# + 1 & /@ poles)*ab);       (*Muliply the past value by a pole-order dependent coefficient*)
+        sum = Plus @@ ((2.*# + 1 & /@ poles)*ab);       (*Muliply the past value by a pole-order dependent cWhiteoefficient*)
     sum *= 2./(x^2)]       (*Normalize by the geometric cross section of the sphere*)
 (* --------------------------------------------------------------------------------------------- *)
 
@@ -376,8 +376,8 @@ MieVectorSphericalHarmonicNo1[super_Integer, nn_, point_List, wavenumber_, Optio
 									_, Return[Message[MieVectorSphericalHarmonic::CoordinateSystem]]];
 		VSH  = Sin[phi] * MieTau[n, Cos[theta]] * etheta + Cos[phi] * MiePi[n, Cos[theta]] * ephi;
 	    VSH *= (-n * bessel[n, #] + # * bessel[n-1, #])&[wavenumber * rho] ;
-	    VSH += Sin[phi] * bessel[n, wavenumber * rho] *(n*(n + 1)) * LegendreP[n, Cos[theta]] * er;
-	    VSH /= wavenumber * rho;
+	    VSH += Sin[phi] * bessel[n, wavenumber * rho] *(n*(n + 1)) * MiePi[n, Cos[theta]] * Sin[theta] * er;
+	    VSH /= (wavenumber * rho);
 		VSH = Switch[OptionValue["OutputVectorBase"],
 					"Cartesian" , Map[Dot[SphericalToCartesian[theta, phi], #]&, VSH],
                     "Spherical", VSH,
@@ -402,8 +402,8 @@ MieVectorSphericalHarmonicNe1[super_Integer, nn_, point_List, wavenumber_, Optio
 									_, Return[Message[MieVectorSphericalHarmonic::CoordinateSystem]]];
 		VSH  = Cos[phi] * MieTau[n, Cos[theta] ] * etheta -  Sin[phi] * MiePi[n, Cos[theta] ]* ephi;
         VSH *= (-n * bessel[n, #] + # * bessel[n-1, #])&[wavenumber * rho] ;
-        VSH += Cos[phi] * bessel[n, wavenumber * rho] *(n*(n + 1)) * LegendreP[n, Cos[theta]] * er;
-        VSH /= wavenumber * rho;
+        VSH += Cos[phi] * bessel[n, wavenumber * rho] *(n*(n + 1)) * MiePi[n, Cos[theta]] * Sin[theta] * er;
+        VSH /= (wavenumber * rho);
 		VSH = Switch[OptionValue["OutputVectorBase"],
 					"Cartesian" , Map[Dot[SphericalToCartesian[theta, phi], #]&, VSH],
                     "Spherical", VSH,
@@ -471,7 +471,7 @@ MieScatteredElectricField[initialMesh_, indices_, wlength_, radius_,  OptionsPat
           Mon1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Mon1];  (*[[7,3,grid-rev]]*)
           
           field = {I, -1} * MieCoefficient[poles, x, Divide @@ Reverse[indices]] * {Nen1, Mon1 } ; (*[[ 2 = {iaN,-bM}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
@@ -507,7 +507,7 @@ MieScatteredElectricField[initialMesh_, indices_, wlength_, radius_, pole_,  Opt
           Mon1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Mon1];  (*[[7,3,grid-rev]]*)
           
           field = {I, -1} * MieCoefficient[poles, x, Divide @@ Reverse[indices]] * {Nen1, Mon1 } ; (*[[ 2 = {iaN,-bM}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 
@@ -546,7 +546,7 @@ MieInternalElectricField[initialMesh_, indices_, wlength_, radius_,  OptionsPatt
           Mon1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Mon1];  (*[[7,3,grid-rev]]*)
           
           field = {1, -I} * MieCoefficientInt[poles, x, Divide @@ Reverse[indices]] * {Mon1, Nen1} ; (*[[ 2 = {cM,-idN}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
@@ -575,15 +575,15 @@ MieInternalElectricField[initialMesh_, indices_, wlength_, radius_, pole_,  Opti
           
           Nen1 = map[If[Norm[#] > radius,
                       ConstantArray[{0,0,0}, Length[poles]],
-                      evenVSH[1,#,1.]] &, mesh,{-2}];
+                      evenVSH[1,#,m]] &, mesh,{-2}];
           Nen1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Nen1]; (*[[7,3,grid-rev]]*)
           Mon1 = map[ If[Norm[#] > radius,
                        ConstantArray[{0,0,0}, Length[poles]],
-                       oddVSH[1,#,1.]]&, mesh,{-2}];
+                       oddVSH[1,#,m]]&, mesh,{-2}];
           Mon1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Mon1];  (*[[7,3,grid-rev]]*)
           
           field = {1, -I} * MieCoefficientInt[poles, x, Divide @@ Reverse[indices]] * {Mon1, Nen1} ; (*[[ 2 = {cM,-idN}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 
@@ -623,7 +623,7 @@ MieScatteredHField[initialMesh_, indices_, wlength_, radius_,  OptionsPattern[]]
           Non1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Non1];  (*[[7,3,grid-rev]]*)
           
           field = {-1, -I} * MieCoefficient[poles, x, Divide @@ Reverse[indices]] * {Men1, Non1 } ; (*[[ 2 = {-aM,-ibN}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
@@ -659,7 +659,7 @@ MieScatteredHField[initialMesh_, indices_, wlength_, radius_, pole_,  OptionsPat
           Non1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Non1];  (*[[7,3,grid-rev]]*)
           
           field = {-1, -I} * MieCoefficient[poles, x, Divide @@ Reverse[indices]] * {Men1, Non1 } ; (*[[ 2 = {-aM,-ibN}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 
@@ -699,7 +699,7 @@ MieInternalHField[initialMesh_, indices_, wlength_, radius_,  OptionsPattern[]]:
           Non1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Non1];  (*[[7,3,grid-rev]]*)
           
           field = {-I, -1} * MieCoefficientInt[poles, x, Divide @@ Reverse[indices]] * {Non1,Men1 } ; (*[[ 2 = {-icN,-dM}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------------------------------- *)
@@ -736,7 +736,7 @@ MieInternalHField[initialMesh_, indices_, wlength_, radius_, pole_,  OptionsPatt
           Non1 = Transpose[Transpose[#, Reverse@Range@Length@Dimensions[#]]]&[Non1];  (*[[7,3,grid-rev]]*)
           
           field = {-I, -1} * MieCoefficientInt[poles, x, Divide @@ Reverse[indices]] * {Non1,Men1 } ; (*[[ 2 = {-icN,-dM}, 7, 3, grid ]]  *)
-          field = Plus @@ Plus @@ field;  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
+          field = Plus @@ (coeff * Plus @@ field);  (*[[ 7}, 3, grid ]] --> , [[3, grid ]]  *)
     Transpose[#, Reverse@Range@Length@Dimensions[#]]&[field]]
 (* --------------------------------------------------------------------------------------------- *)
 

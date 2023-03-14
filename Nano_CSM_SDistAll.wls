@@ -268,7 +268,7 @@ CSMPolyAmplitudeReflectionTransmission[ang_, {nM_,nP_},lda_, cfrac_, {mu_, sigma
 							 h = Abs[Differences[lim] / 40][[1]];
 							 rhost =  cfrac * Exp[-2*Log[sigma]^2]/(Pi * mu^2);
 							 sizeDist = rhost * PDF[LogNormalDistribution[Log[mu],Log[sigma]],#]&,
-				"Normal", lim = mu + 5*sigma*{-1,+1}; lim[[1]] = If[lim[[1]]< 0,0,lim[[1]]];
+				"Normal", lim = mu + 5*sigma*{-1,+1}; lim[[1]] = If[lim[[1]]< 0,0.1,lim[[1]]];
 							 h = Abs[Differences[lim] / 40][[1]];
 							 rhost =  cfrac /(Pi * mu^2);
 							 sizeDist = rhost * PDF[NormalDistribution[mu,sigma],#]&,

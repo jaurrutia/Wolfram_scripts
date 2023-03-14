@@ -25,7 +25,7 @@ CSMBioReflectionTransmission[ang_, nM_,lda_, cfrac_, {mu_, sigma_}, OptionsPatte
 							 sizeDist = rhost * PDF[LogNormalDistribution[Log[mu],Log[sigma]],#]&,
 				"Normal", lim = mu + 5*sigma*{-1,+1}; lim[[1]] = If[lim[[1]]< 0,0,lim[[1]]];
 							 h = Abs[Differences[lim] / 40][[1]];
-							 rhost =  cfrac * sigma^2/(Pi * mu^2);
+							 rhost =  cfrac * Exp[-2*Log[1+(sigma/mu)]^2]/(Pi * mu^2);
 							 sizeDist = rhost * PDF[NormalDistribution[mu,sigma],#]&,
 						_, Return[Message[CSMBioReflectionTransmission::Dist,"SizeDistribution"]]];
 		radii = Table[a,{a,lim[[1]], lim[[-1]], h}];
