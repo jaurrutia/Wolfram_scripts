@@ -108,6 +108,30 @@ This function does not thread over any arguement.
 MieScatteringAmplitude12::usage = "Scattering Amplitude Matrix elements S1 and S2 for a spherical scatterer. The  multipolar contributions to the result can be chosen by Default (Wacombe Criteria) or up to the 'pole' \
 									contribution, and if 'pole' is a list,only those multioples are considered."
 (* --------------------------------------------------------------------------------------------- *)
+MieScatteringAmplitude0[x_, m_] :=
+    Module[{ab, poles, pitau, coeff},
+        poles = Range[Ceiling[x + 4.*x^(1./3) + 2.]]; (*Wacombe criteria for convergence*)
+
+        ab = MieCoefficient[poles, x, m];
+        pitau = Through[{MiePi, MieTau}[poles, Cos[angle]] ];
+        coeff = ((2.*# + 1)/((# + 1)*#)) & /@ poles;
+
+        0.5 * Plus @@ (((2.*#+1) &/@ poles) * Plus @@ ab)]
+(* --------------------------------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------------------------------- *)
+MieScatteringAmplitude0[x_, m_, pole_] :=
+    Module[{ab, poles, pitau, coeff,  s1, s2},
+		If[! Apply[Equal, IntegerQ /@ toMap[pole]],
+            Return[Message[MieCoefficient::Int, #]] & /@ toMap[pole]]; (*Pole orders must be integers*)
+        If[Length[pole] == 0, poles = Range[pole], poles = pole];
+
+        ab = MieCoefficient[poles, x, m];
+        pitau = Through[{MiePi, MieTau}[poles, Cos[angle]] ];
+        coeff = ((2.*# + 1)/((# + 1)*#)) & /@ poles;
+
+        0.5 * Plus @@ (((2.*#+1) &/@ poles) * Plus @@ ab)]
+(* --------------------------------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------------------------------- *)
 MieScatteringAmplitude12[x_, m_, angle_] :=
     Module[{ab, poles, pitau, coeff,  s1, s2},
         poles = Range[Ceiling[x + 4.*x^(1./3) + 2.]]; (*Wacombe criteria for convergence*)
@@ -124,7 +148,7 @@ MieScatteringAmplitude12[x_, m_, angle_] :=
 MieScatteringAmplitude12[x_, m_, angle_, pole_] :=
     Module[{ab, poles, pitau, coeff,  s1, s2},
 		If[! Apply[Equal, IntegerQ /@ toMap[pole]],
-            Return[Message[MieCoefficient::Int, #]] & /@ toMap[pole]]; (*Pole orders must be integers*)    
+            Return[Message[MieCoefficient::Int, #]] & /@ toMap[pole]]; (*Pole orders must be integers*)
         If[Length[pole] == 0, poles = Range[pole], poles = pole];
 
         ab = MieCoefficient[poles, x, m];
