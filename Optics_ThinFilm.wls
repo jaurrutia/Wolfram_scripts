@@ -52,12 +52,12 @@ ThinFilmReflectionIntS[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},
       imageA = (epsS-epsM) / (epsS+epsM);
       lDyn += ( # * geom * imageA &/@  {1. , 0.5}); (*Dynamic depolarization factors [[perp/para, lda]]*)
       
-      alpha = vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
+      alpha =  vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn;
       size = k0 * Sqrt[epsM] * aRad; (*[[lda]]*)
      
       If[ Apply[Or, Thread[size < ConstantArray[0.2,Length[k0]]]], 
          alpha[[2]] = 1. / ( 1./alpha[[2]] - #^2 / (4.*Pi*aRad) - I * #^3 / (6.*Pi) )&[size/aRad]];
-      gamma = cfrac * alpha / {epsS^2, ConstantArray[1., Length[toMap[lda]]]}; (*surface Polarizability [[perp/para, lda]] -- Cambiamos matriz por sustrato*)
+      gamma = cfrac * alpha / {epsS^2, ConstantArray[1., Length[toMap[lda]]]}; (*surface Polarizability [[perp/para, lda]] -- Cambiamos matriz por sustrato *** segumos con la discusi\[OAcute]n*)
       
       cos[[1]] = Transpose[Cos[thetai]& /@  epsS]; (*[[ang, m]]*) (*Cosine of the incidence angle*)
       cos[[2]] = Outer[Sqrt[1. - #2 * Sin[#1]^2] & ,  thetai, (epsS/epsM)];  (*[[ang, m]]*) (*Cosine of the transmitted angle*)
@@ -79,7 +79,7 @@ ThinFilmReflectionIntS[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},
       imageA = (epsS-epsM) / (epsS+epsM);
       lDyn += ( # * geom * imageA &/@  {1. , 0.5}); (*Dynamic depolarization factors [[perp/para, lda]]*)
       
-      alpha = vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
+      alpha =  vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn; (*Polarizability [[perp/para, lda]]   SE CAMBIO EL ORDEN*)
       size = k0 * Sqrt[epsM] * aRad; (*[[lda]]*)
      
       If[ Apply[Or, Thread[size < ConstantArray[0.2,Length[k0]]]], 
@@ -110,7 +110,7 @@ ThinFilmReflectionIntP[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},
       imageA = (epsS-epsM) / (epsS+epsM);
       lDyn += ( # * geom * imageA &/@  {1. , 0.5}); (*Dynamic depolarization factors [[perp/para, lda]]*)
       
-      alpha = vol * (epsP-epsM) * epsM / (epsM + # * (epsP-epsM)) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
+      alpha =   vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
       size = k0 * nM * aRad; (*[[lda]]*)
       If[ Apply[Or, Thread[size < ConstantArray[0.6,Length[k0]]]], 
          alpha[[2]] = 1/(1/alpha[[2]]-#^2/(4.*Pi*aRad)-I*#^3/(6.*Pi))&[size/aRad]];
@@ -143,7 +143,7 @@ ThinFilmReflectionIntP[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},
       imageA = (epsS-epsM) / (epsS+epsM);
       lDyn += ( # * geom * imageA &/@  {1. , 0.5}); (*Dynamic depolarization factors [[perp/para, lda]]*)
       
-      alpha = vol * (epsP-epsM) * epsM / (epsM + # * (epsP-epsM)) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
+      alpha =  vol * epsM * (epsP - epsM) / (epsM + # * (epsP - epsM) ) &/@ lDyn; (*Polarizability [[perp/para, lda]]*)
       size = k0 * nM * aRad; (*[[lda]]*)
       If[ Apply[Or, Thread[size < ConstantArray[0.6,Length[k0]]]], 
          alpha[[2]] = 1/(1/alpha[[2]]-#^2/(4.*Pi*aRad)-I*#^3/(6.*Pi))&[size/aRad]];
@@ -165,3 +165,9 @@ ThinFilmReflectionIntP[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},
   	Which[Length[epsilonMatrix] == Length[N[ang]] == 0, rp[[1, 1]],
   		  Length[epsilonMatrix] == 0 || Length[N[ang]] == 0, Flatten[rp],
    		 True, rp]]
+
+
+ThinFimlElipsometryInt[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},lda_,{aRad_,bRad_},cfrac_]:= {ArcTan[Abs[#]],Arg[#]} &@ (Divide @@ Reverse @ Through[{ThinFilmReflectionIntS,ThinFilmReflectionIntP}[ang,{epsilonMatrix,epsilonParticle,epsilonSubstrate},lda,{aRad,bRad},cfrac]](*[[pol (2), ang, lda]]*)) 
+ThinFimlElipsometryInt[ang_,{epsilonMatrix_,epsilonParticle_,epsilonSubstrate_},lda_,aRad_,cfrac_]:= {ArcTan[Abs[#]],Arg[#]} &@ (Divide @@ Reverse @ Through[{ThinFilmReflectionIntS,ThinFilmReflectionIntP}[ang,{epsilonMatrix,epsilonParticle,epsilonSubstrate},lda,aRad,cfrac]](*[[pol (2), ang, lda]]*)) 
+(* --------------------------------------------------------------------------------------------- *)
+

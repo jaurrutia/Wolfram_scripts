@@ -248,8 +248,8 @@ CSM3MediaTransmissionInt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:=
 
 
 (* --------------------------------------------------------------------------------------------- *)
-CSM3MediaElipsometryExt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSM3MediaReflectionExt[ang,{nM,nP,nS},lda,rad,cfrac](*[[pol (2), ang, lda]]*)) 
-CSM3MediaElipsometryInt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSM3MediaReflectionInt[ang,{nM,nP,nS},lda,rad,cfrac](*[[pol (2), ang, lda]]*)) 
+CSM3MediaElipsometryExt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ Reverse @ CSM3MediaReflectionExt[ang,{nM,nP,nS},lda,rad,cfrac](*[[pol (2), ang, lda]]*)) 
+CSM3MediaElipsometryInt[ang_,{nM_,nP_,nS_},lda_,rad_,cfrac_]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ Reverse @ CSM3MediaReflectionInt[ang,{nM,nP,nS},lda,rad,cfrac](*[[pol (2), ang, lda]]*)) 
 (* --------------------------------------------------------------------------------------------- *)
 
 
@@ -386,7 +386,7 @@ CSMPolyTransmissionInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:
 
 
 (* --------------------------------------------------------------------------------------------- *)
-CSMPolyElipsometryExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionExt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
-CSMPolyElipsometryInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide@@ CSMPolyReflectionInt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
+CSMPolyElipsometryExt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide @@ Reverse @ CSMPolyReflectionExt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
+CSMPolyElipsometryInt[ang_,{nM_,nP_,nS_},lda_,cfrac_,{mu_, sigma_, sizeDist_}]:= {ArcTan[Abs[#]],Arg[#]}&@ (Divide @@ Reverse @ CSMPolyReflectionInt[ang,{nM,nP,nS},lda,cfrac,{mu, sigma, sizeDist}](*[[pol (2), ang, lda]]*)) 
 (* --------------------------------------------------------------------------------------------- *)
 
