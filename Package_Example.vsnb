@@ -1,0 +1,152 @@
+{
+ "cells": [
+  {
+   "kind": 2,
+   "value": "BeginPackage[\"LCGRandom`\"]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "LCGRandom`",
+       "mime": "text/html"
+      }
+     ],
+     "id": "adfe9ab6-8728-4c74-8003-f19a6acf2d02"
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785430796875,
+     "endTime": 1785430798512
+    },
+    "executionOrder": 1,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "LCGSetSeed::usage = \"LCGSetSeed[x] sets the LCG random number generator's seed to the integer x.\";\nLCGRandom::usage = \"LCGRandom[] generates a uniformly distributed random in te range {0.,1.} using a linear congruential generator.\"",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "LCGRandom[] generates a uniformly distributed random in te range {0.,1.} using a linear congruential generator.",
+       "mime": "text/html"
+      }
+     ],
+     "id": "80df91a0-f8da-499d-a536-9bc658157e2f"
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785430800664,
+     "endTime": 1785430800705
+    },
+    "executionOrder": 3,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "(******\nThe privte context is useful to define variables/constants that are not used outside the package. \n*******)\nBegin[\"`Private`\"]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "LCGRandom`Private`",
+       "mime": "text/html"
+      }
+     ],
+     "id": "b549bab7-2e73-4dd0-8f86-3c98561d0575"
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785430810352,
+     "endTime": 1785430810382
+    },
+    "executionOrder": 4,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "modulus = 2^31 - 1;\nseed = 1;\n\nLCGSetSeed[x_Integer /; 1 <= seed < modulus] := seed = x\nLCGRandom[] := (\n    seed = Mod[7^5 * seed, modulus];\n    N[seed/modulus]\n)\n",
+   "languageId": "wolfram",
+   "outputs": [],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785431082301,
+     "endTime": 1785431082310
+    },
+    "executionOrder": 8,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "End[]",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "LCGRandom`Private`",
+       "mime": "text/html"
+      }
+     ],
+     "id": "30b67755-2c53-4c1c-908b-217c5b0cc415"
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785431087466,
+     "endTime": 1785431087502
+    },
+    "executionOrder": 9,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "Protect[LCGSetSeed, LCGRandom]\nEndPackage[];",
+   "languageId": "wolfram",
+   "outputs": [
+    {
+     "items": [
+      {
+       "data": "{LCGSetSeed, LCGRandom}",
+       "mime": "text/html"
+      }
+     ],
+     "id": "161d1782-4299-48d6-b669-9c721d4b596d"
+    }
+   ],
+   "metadata": {},
+   "executionSummary": {
+    "timing": {
+     "startTime": 1785431132410,
+     "endTime": 1785431132446
+    },
+    "executionOrder": 11,
+    "success": true
+   }
+  },
+  {
+   "kind": 2,
+   "value": "",
+   "languageId": "wolfram",
+   "outputs": [],
+   "metadata": {},
+   "executionSummary": {}
+  }
+ ]
+}
